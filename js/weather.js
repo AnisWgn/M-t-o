@@ -1,7 +1,7 @@
 // ==========================================
 // CONFIGURATION API
 // ==========================================
-const API_KEY = '47e081eda40161d90db0fdf3191b1a44'; // Remplacez par votre clé API
+const API_KEY = '47e081eda40161d90db0fdf3191b1a44'; 
 const API_URL = 'https://api.openweathermap.org/data/2.5/weather';
 const GEO_API_URL = 'https://api.openweathermap.org/geo/1.0/direct';
 
@@ -417,13 +417,13 @@ function init() {
     setupEventListeners();
     
     // Vérifier la clé API
-    if (API_KEY === 'YOUR_API_KEY_HERE' || !API_KEY) {
+    if (API_KEY !== '47e081eda40161d90db0fdf3191b1a44' || !API_KEY) {
         showError('Veuillez configurer votre clé API OpenWeatherMap');
         return;
     }
     
     // Charger la météo de Paris par défaut
-    searchWeather('Paris, FR');
+    searchWeather('Nancy, FR');
 }
 
 // Démarrer l'application quand le DOM est chargé

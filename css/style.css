@@ -5,7 +5,7 @@
     --primary-color: #667eea;
     --secondary-color: #764ba2;
     --text-dark: #1f2937;
-    --text-light: #6b7280;
+    --text-light: #4b5563;
     --white: #ffffff;
     --shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
@@ -469,6 +469,8 @@ body.haze {
     color: var(--text-light);
     font-size: 1rem;
     margin-bottom: 2rem;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.8), 0 2px 6px rgba(255, 255, 255, 0.4);
+    font-weight: 500;
 }
 
 .weather-current {
@@ -500,13 +502,16 @@ body.haze {
     font-size: 1.5rem;
     color: var(--text-light);
     text-transform: capitalize;
-    text-shadow: 0 1px 4px rgba(255, 255, 255, 0.6);
+    text-shadow: 0 1px 4px rgba(255, 255, 255, 0.9), 0 2px 8px rgba(255, 255, 255, 0.5);
+    font-weight: 500;
 }
 
 .feels-like {
     color: var(--text-light);
     font-size: 1.125rem;
     margin-top: 1rem;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.8), 0 2px 6px rgba(255, 255, 255, 0.4);
+    font-weight: 500;
 }
 
 /* Détails météo */
@@ -553,7 +558,7 @@ body.haze {
     margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9), 0 2px 6px rgba(255, 255, 255, 0.5);
 }
 
 .detail-value {
@@ -583,7 +588,7 @@ body.haze {
     margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9), 0 2px 6px rgba(255, 255, 255, 0.5);
 }
 
 .sun-time-value {
