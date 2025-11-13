@@ -8,22 +8,43 @@ const GEO_API_URL = 'https://api.openweathermap.org/geo/1.0/direct';
 // ==========================================
 // LISTE DE VILLES POUR L'AUTOCOMPLÉTION
 // ==========================================
-const cities = [
+const baseCities = [
+    // France
     'Paris, FR', 'Lyon, FR', 'Marseille, FR', 'Toulouse, FR', 'Nice, FR',
     'Nantes, FR', 'Strasbourg, FR', 'Montpellier, FR', 'Bordeaux, FR', 'Lille, FR',
     'Rennes, FR', 'Reims, FR', 'Saint-Étienne, FR', 'Toulon, FR', 'Le Havre, FR',
     'Grenoble, FR', 'Dijon, FR', 'Angers, FR', 'Villeurbanne, FR', 'Nîmes, FR',
-    'London, GB', 'New York, US', 'Tokyo, JP', 'Berlin, DE', 'Madrid, ES',
-    'Rome, IT', 'Amsterdam, NL', 'Brussels, BE', 'Vienna, AT', 'Prague, CZ',
-    'Stockholm, SE', 'Copenhagen, DK', 'Oslo, NO', 'Helsinki, FI', 'Warsaw, PL',
-    'Budapest, HU', 'Lisbon, PT', 'Athens, GR', 'Dublin, IE', 'Edinburgh, GB',
-    'Barcelona, ES', 'Milan, IT', 'Munich, DE', 'Frankfurt, DE', 'Zurich, CH',
-    'Geneva, CH', 'Montreal, CA', 'Toronto, CA', 'Vancouver, CA', 'Sydney, AU',
-    'Melbourne, AU', 'Moscow, RU', 'Beijing, CN', 'Shanghai, CN', 'Hong Kong, HK',
-    'Singapore, SG', 'Dubai, AE', 'Cairo, EG', 'Istanbul, TR', 'Mumbai, IN',
-    'Delhi, IN', 'Bangkok, TH', 'Seoul, KR', 'Buenos Aires, AR', 'Rio de Janeiro, BR',
-    'São Paulo, BR', 'Mexico City, MX', 'Los Angeles, US', 'Chicago, US', 'Miami, US'
+    'Nancy, FR', 'Clermont-Ferrand, FR', 'Brest, FR', 'Biarritz, FR', 'La Rochelle, FR',
+    // Europe
+    'London, GB', 'Manchester, GB', 'Edinburgh, GB', 'Dublin, IE',
+    'Madrid, ES', 'Barcelona, ES', 'Valencia, ES', 'Lisbon, PT', 'Porto, PT',
+    'Rome, IT', 'Milan, IT', 'Naples, IT', 'Berlin, DE', 'Munich, DE',
+    'Frankfurt, DE', 'Hamburg, DE', 'Zurich, CH', 'Geneva, CH', 'Vienna, AT',
+    'Prague, CZ', 'Warsaw, PL', 'Budapest, HU', 'Athens, GR', 'Istanbul, TR',
+    'Oslo, NO', 'Stockholm, SE', 'Copenhagen, DK', 'Helsinki, FI',
+    'Brussels, BE', 'Amsterdam, NL', 'Reykjavik, IS',
+    // Amériques
+    'New York, US', 'Washington, US', 'Boston, US', 'Chicago, US', 'Miami, US',
+    'Atlanta, US', 'Houston, US', 'Dallas, US', 'Denver, US', 'Seattle, US',
+    'San Francisco, US', 'Los Angeles, US', 'San Diego, US', 'Las Vegas, US',
+    'Montreal, CA', 'Toronto, CA', 'Vancouver, CA', 'Calgary, CA', 'Quebec City, CA',
+    'Mexico City, MX', 'Guadalajara, MX', 'Cancun, MX',
+    'Buenos Aires, AR', 'Santiago, CL', 'Bogota, CO', 'Lima, PE',
+    'Rio de Janeiro, BR', 'São Paulo, BR',
+    // Afrique & Moyen-Orient
+    'Cape Town, ZA', 'Johannesburg, ZA', 'Nairobi, KE', 'Casablanca, MA',
+    'Marrakesh, MA', 'Cairo, EG', 'Abidjan, CI',
+    'Dubai, AE', 'Abu Dhabi, AE', 'Doha, QA', 'Riyadh, SA', 'Tel Aviv, IL',
+    // Asie & Océanie
+    'Mumbai, IN', 'Delhi, IN', 'Bengaluru, IN', 'Chennai, IN',
+    'Bangkok, TH', 'Singapore, SG', 'Kuala Lumpur, MY', 'Jakarta, ID', 'Manila, PH',
+    'Tokyo, JP', 'Osaka, JP', 'Seoul, KR', 'Busan, KR',
+    'Beijing, CN', 'Shanghai, CN', 'Shenzhen, CN', 'Hong Kong, HK', 'Taipei, TW',
+    'Sydney, AU', 'Melbourne, AU', 'Brisbane, AU', 'Perth, AU',
+    'Auckland, NZ', 'Wellington, NZ'
 ];
+
+const cities = Array.from(new Set(baseCities));
 
 // ==========================================
 // ÉLÉMENTS DOM
@@ -92,56 +113,79 @@ function updateWeatherBackground(weatherData) {
     const weatherMain = weatherData.weather[0].main.toLowerCase();
     const iconCode = weatherData.weather[0].icon;
     const isNight = iconCode.includes('n');
+    const windSpeed = weatherData.wind?.speed ?? 0;
+    const cloudCover = weatherData.clouds?.all ?? 50;
+    const rainIntensity = weatherData.rain?.['1h'] || weatherData.rain?.['3h'] || 0;
+    const snowIntensity = weatherData.snow?.['1h'] || weatherData.snow?.['3h'] || 0;
     
     // Supprimer toutes les classes météo précédentes
     body.className = '';
     particlesContainer.innerHTML = '';
+    
+    const gentleStars = () => {
+        particlesContainer.innerHTML = '<div class="moon"></div>';
+        createStars(120);
+    };
     
     // Ajouter la classe appropriée selon la météo
     switch(weatherMain) {
         case 'clear':
             body.classList.add(isNight ? 'clear-night' : 'clear-day');
             if (isNight) {
-                // Ajouter la lune et des étoiles
-                particlesContainer.innerHTML = '<div class="moon"></div>';
-                createStars(80);
+                gentleStars();
             } else {
-                // Ajouter le soleil
                 particlesContainer.innerHTML = '<div class="sun"></div>';
+                createHighAltitudeClouds(Math.max(1, Math.round(windSpeed / 5)));
             }
             break;
             
         case 'clouds':
             body.classList.add('clouds');
-            createClouds(6);
+            createClouds(Math.max(4, Math.round(cloudCover / 15)), { wind: windSpeed });
             break;
             
         case 'rain':
         case 'drizzle':
             body.classList.add('rain');
-            createRain(120);
+            createClouds(Math.max(3, Math.round(cloudCover / 20)), { wind: windSpeed });
+            createRain({
+                count: 90 + Math.round(rainIntensity * 60),
+                wind: windSpeed,
+                light: weatherMain === 'drizzle'
+            });
             break;
             
         case 'thunderstorm':
             body.classList.add('thunderstorm');
-            createRain(180);
+            createClouds(Math.max(6, Math.round(cloudCover / 10)), { wind: windSpeed });
+            createRain({
+                count: 150,
+                wind: windSpeed * 1.4,
+                heavy: true
+            });
+            createLightningFlashes(3);
             break;
             
         case 'snow':
             body.classList.add('snow');
-            createSnow(60);
+            createClouds(Math.max(3, Math.round(cloudCover / 20)), { wind: windSpeed });
+            createSnow({
+                count: 60 + Math.round(Math.max(1, snowIntensity) * 25),
+                wind: windSpeed
+            });
             break;
             
         case 'mist':
         case 'fog':
         case 'haze':
             body.classList.add('mist');
-            createClouds(4, true);
+            createMistLayers();
+            createClouds(Math.max(4, Math.round(cloudCover / 25)), { isFog: true, wind: windSpeed / 2 });
             break;
             
         default:
             body.classList.add('clouds');
-            createClouds(5);
+            createClouds(Math.max(4, Math.round(cloudCover / 15)), { wind: windSpeed });
     }
 }
 
@@ -161,46 +205,94 @@ function createStars(count) {
     }
 }
 
-function createClouds(count, isFog = false) {
+function createHighAltitudeClouds(count = 2) {
+    createClouds(count, { highAltitude: true, wind: 5 });
+}
+
+function createClouds(count, options = {}) {
+    const { isFog = false, wind = 0, highAltitude = false } = options;
     const container = elements.weatherParticles;
     for (let i = 0; i < count; i++) {
         const cloud = document.createElement('div');
-        cloud.className = 'cloud';
-        cloud.style.top = Math.random() * (isFog ? 100 : 60) + '%';
-        cloud.style.width = (Math.random() * (isFog ? 150 : 100) + (isFog ? 120 : 80)) + 'px';
-        cloud.style.height = (Math.random() * (isFog ? 60 : 40) + (isFog ? 50 : 30)) + 'px';
-        cloud.style.animationDuration = (Math.random() * (isFog ? 40 : 25) + (isFog ? 50 : 35)) + 's';
-        cloud.style.animationDelay = Math.random() * 15 + 's';
-        if (isFog) {
-            cloud.style.opacity = '0.7';
-        }
+        cloud.className = `cloud${isFog ? ' fog' : ''}`;
+        const topRange = isFog ? 80 : highAltitude ? 20 : 60;
+        cloud.style.top = (isFog ? (20 + Math.random() * topRange) : Math.random() * topRange) + '%';
+        const baseWidth = isFog ? 220 : highAltitude ? 140 : 120;
+        const width = baseWidth + Math.random() * (isFog ? 180 : 100);
+        cloud.style.width = `${width}px`;
+        cloud.style.height = `${width * (isFog ? 0.4 : 0.6)}px`;
+        const durationBase = (isFog ? 55 : 28) + Math.random() * (isFog ? 30 : 18) - wind * 1.5;
+        const finalDuration = Math.max(18, durationBase);
+        cloud.style.setProperty('--cloud-duration', `${finalDuration}s`);
+        cloud.style.animationDuration = `${finalDuration}s`;
+        cloud.style.animationDelay = `${Math.random() * 15}s`;
+        cloud.style.setProperty('--cloud-opacity', isFog ? 0.5 : 0.5 + Math.random() * 0.3);
+        cloud.style.setProperty('--cloud-blur', isFog ? '10px' : `${Math.random() * 4}px`);
+        const shift = (Math.random() - 0.5) * wind * 15;
+        cloud.style.setProperty('--cloud-shift', `${shift}px`);
+        cloud.style.animationPlayState = 'running';
+        cloud.style.willChange = 'transform';
         container.appendChild(cloud);
     }
 }
 
-function createRain(count) {
+function createRain(options = {}) {
+    const { count = 120, wind = 0, light = false, heavy = false } = options;
     const container = elements.weatherParticles;
     for (let i = 0; i < count; i++) {
         const drop = document.createElement('div');
         drop.className = 'rain-drop';
         drop.style.left = Math.random() * 100 + '%';
-        drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
-        drop.style.animationDelay = Math.random() * 2 + 's';
+        const height = light ? (10 + Math.random() * 15) : (15 + Math.random() * 25);
+        drop.style.height = `${height}px`;
+        const duration = light ? (0.9 + Math.random() * 0.5) : heavy ? (0.5 + Math.random() * 0.3) : (0.7 + Math.random() * 0.4);
+        drop.style.setProperty('--fall-duration', `${duration}s`);
+        drop.style.animationDuration = `${duration}s`;
+        drop.style.animationDelay = `${Math.random() * 1.5}s`;
+        const drift = (Math.random() - 0.5) * wind * 8;
+        drop.style.setProperty('--drift', `${drift}px`);
+        drop.style.opacity = light ? 0.5 : heavy ? 0.85 : 0.7;
         container.appendChild(drop);
     }
 }
 
-function createSnow(count) {
+function createSnow(options = {}) {
+    const { count = 60, wind = 0 } = options;
     const container = elements.weatherParticles;
     for (let i = 0; i < count; i++) {
         const flake = document.createElement('div');
         flake.className = 'snow-flake';
         flake.style.left = Math.random() * 100 + '%';
-        flake.style.animationDuration = (Math.random() * 3 + 3) + 's';
-        flake.style.animationDelay = Math.random() * 5 + 's';
-        flake.style.width = (Math.random() * 6 + 8) + 'px';
+        const duration = (Math.random() * 4 + 5) - wind * 0.2;
+        flake.style.setProperty('--snow-duration', `${Math.max(4, duration)}s`);
+        flake.style.animationDuration = `${Math.max(4, duration)}s`;
+        flake.style.animationDelay = `${Math.random() * 4}s`;
+        const size = Math.random() * 6 + 6;
+        flake.style.width = `${size}px`;
         flake.style.height = flake.style.width;
+        const drift = (Math.random() - 0.5) * (10 + wind * 4);
+        flake.style.setProperty('--drift', `${drift}px`);
         container.appendChild(flake);
+    }
+}
+
+function createMistLayers() {
+    const container = elements.weatherParticles;
+    for (let i = 0; i < 3; i++) {
+        const layer = document.createElement('div');
+        layer.className = 'mist-layer';
+        layer.style.setProperty('--mist-duration', `${30 + Math.random() * 20}s`);
+        container.appendChild(layer);
+    }
+}
+
+function createLightningFlashes(count = 2) {
+    const container = elements.weatherParticles;
+    for (let i = 0; i < count; i++) {
+        const flash = document.createElement('div');
+        flash.className = 'lightning-flash';
+        flash.style.animationDelay = `${Math.random() * 2}s`;
+        container.appendChild(flash);
     }
 }
 

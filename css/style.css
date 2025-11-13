@@ -28,6 +28,16 @@ body {
     overflow-x: hidden;
 }
 
+footer {
+    text-align: center;
+    color: white;
+    padding: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.5);
+}
+
 /* Backgrounds selon la météo */
 body.clear-day {
     background: linear-gradient(135deg, #FDB99B 0%, #FCE77D 50%, #87CEEB 100%);
@@ -135,19 +145,58 @@ body.haze {
 /* Nuages */
 .cloud {
     position: absolute;
-    background: rgba(255, 255, 255, 0.35);
-    border-radius: 100px;
-    animation: drift linear infinite;
-    opacity: 0.6;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    background: radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.4) 45%, rgba(255, 255, 255, 0.05) 100%);
+    border-radius: 50%;
+    animation: drift var(--cloud-duration, 60s) linear infinite;
+    opacity: var(--cloud-opacity, 0.65);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    filter: blur(calc(var(--cloud-blur, 0px) + 3px));
+    mix-blend-mode: screen;
+    overflow: visible;
+}
+
+.cloud::after,
+.cloud::before {
+    content: '';
+    position: absolute;
+    width: 80%;
+    height: 80%;
+    background: radial-gradient(circle at 40% 60%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.2) 60%, rgba(255, 255, 255, 0) 100%);
+    border-radius: 50%;
+    filter: blur(6px);
+    opacity: 0.8;
+}
+
+.cloud::after {
+    top: -10%;
+    left: 15%;
+    transform: scaleX(1.2);
+}
+
+.cloud::before {
+    bottom: -5%;
+    right: 10%;
+    transform: scale(0.9);
+}
+
+.cloud.fog {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.15) 60%, rgba(255, 255, 255, 0) 100%);
+    filter: blur(15px);
+    opacity: 0.45;
+}
+
+.cloud.fog::after,
+.cloud.fog::before {
+    opacity: 0.4;
+    filter: blur(12px);
 }
 
 @keyframes drift {
     from {
-        transform: translateX(-150%);
+        transform: translateX(calc(-150% - var(--cloud-shift, 0px)));
     }
     to {
-        transform: translateX(150vw);
+        transform: translateX(calc(150vw + var(--cloud-shift, 0px)));
     }
 }
 
@@ -156,15 +205,17 @@ body.haze {
     position: absolute;
     width: 2px;
     height: 20px;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(174, 194, 224, 0.3));
-    animation: fall linear infinite;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(174, 194, 224, 0.2));
+    animation: fall var(--fall-duration, 0.9s) linear infinite;
     opacity: 0.7;
     border-radius: 2px;
+    transform: translate3d(0, -10vh, 0);
 }
 
 @keyframes fall {
     to {
-        transform: translateY(100vh);
+        transform: translate3d(var(--drift, 0px), 110vh, 0);
+        opacity: 0;
     }
 }
 
@@ -175,15 +226,63 @@ body.haze {
     height: 12px;
     background: white;
     border-radius: 50%;
-    animation: snowfall linear infinite;
+    animation: snowfall var(--snow-duration, 7s) linear infinite;
     opacity: 0.9;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    transform: translate3d(0, -10vh, 0);
 }
 
 @keyframes snowfall {
     to {
-        transform: translateY(100vh) rotate(360deg);
+        transform: translate3d(var(--drift, 0px), 110vh, 0) rotate(360deg);
+        opacity: 0;
     }
+}
+
+/* Flash d'éclair */
+.lightning-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 70%);
+    opacity: 0;
+    animation: flash 0.8s ease-out forwards;
+    pointer-events: none;
+    z-index: 2;
+}
+
+@keyframes flash {
+    0% { opacity: 0; }
+    10% { opacity: 0.9; }
+    100% { opacity: 0; }
+}
+
+/* Couches de brume */
+.mist-layer {
+    position: absolute;
+    left: -10%;
+    width: 120%;
+    height: 45%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+    filter: blur(20px);
+    opacity: 0.35;
+    animation: drift-mist var(--mist-duration, 40s) ease-in-out infinite;
+}
+
+.mist-layer:nth-child(odd) {
+    top: 10%;
+}
+
+.mist-layer:nth-child(even) {
+    top: 40%;
+}
+
+@keyframes drift-mist {
+    0% { transform: translateX(-10%); }
+    50% { transform: translateX(10%); }
+    100% { transform: translateX(-10%); }
 }
 
 /* ==========================================
@@ -211,14 +310,25 @@ body.haze {
    CARTES MÉTÉO
    ========================================== */
 .weather-card {
-    background: rgba(255, 255, 255, 0.97);
-    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%); /* Pour Safari */
     border-radius: 24px;
     padding: 2rem;
-    box-shadow: var(--shadow);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
     position: relative;
     z-index: 1;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    /* Effet de buée avec un dégradé subtil */
+    background-image: 
+        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.25) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+}
+
+/* Carte météo principale (pas la recherche) */
+#weatherDisplay .weather-card {
+    z-index: 1;
 }
 
 /* ==========================================
@@ -227,38 +337,41 @@ body.haze {
 .search-container {
     position: relative;
     margin-bottom: 2rem;
+    z-index: 100;
+}
+
+/* S'assurer que le conteneur de recherche passe au-dessus de la carte météo */
+.search-container.weather-card {
+    z-index: 100 !important;
 }
 
 .search-input {
     width: 100%;
     padding: 1rem 140px 1rem 1.5rem;
     font-size: 1.125rem;
-    border: 2px solid #e5e7eb;
+    border: 2px solid rgba(255, 255, 255, 0.18);
     border-radius: 16px;
     outline: none;
     transition: all 0.3s ease;
-    background: white;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%); /* Pour Safari */
+    background-image: 
+        radial-gradient(circle at 30% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
 }
 
 .search-input:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    border-color: rgba(102, 126, 234, 0.5);
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(25px) saturate(200%);
+    -webkit-backdrop-filter: blur(25px) saturate(200%);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+    background-image: 
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 60%);
 }
 
 .search-btn {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    display: none;
 }
 
 .search-btn:hover {
@@ -275,13 +388,17 @@ body.haze {
     position: absolute;
     width: 100%;
     margin-top: 0.5rem;
-    background: white;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
     border-radius: 16px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 40px rgba(31, 38, 135, 0.3);
     max-height: 300px;
     overflow-y: auto;
-    z-index: 10;
-    border: 1px solid #e5e7eb;
+    z-index: 1000;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background-image: 
+        radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.3) 0%, transparent 60%);
 }
 
 .autocomplete-list.hidden {
@@ -291,8 +408,10 @@ body.haze {
 .autocomplete-item {
     padding: 1rem 1.5rem;
     cursor: pointer;
-    transition: background 0.2s ease;
-    border-bottom: 1px solid #f3f4f6;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-dark);
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
 }
 
 .autocomplete-item:last-child {
@@ -300,8 +419,11 @@ body.haze {
 }
 
 .autocomplete-item:hover {
-    background: #f9fafb;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(30px) saturate(200%);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
     color: var(--primary-color);
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.6);
 }
 
 /* ==========================================
@@ -340,6 +462,7 @@ body.haze {
     color: var(--text-dark);
     margin-bottom: 0.5rem;
     letter-spacing: -0.5px;
+    text-shadow: 0 2px 8px rgba(255, 255, 255, 0.8), 0 4px 12px rgba(255, 255, 255, 0.4);
 }
 
 .country-date {
@@ -370,12 +493,14 @@ body.haze {
     color: var(--text-dark);
     line-height: 1;
     margin-bottom: 0.5rem;
+    text-shadow: 0 2px 10px rgba(255, 255, 255, 0.9), 0 4px 20px rgba(255, 255, 255, 0.5);
 }
 
 .description {
     font-size: 1.5rem;
     color: var(--text-light);
     text-transform: capitalize;
+    text-shadow: 0 1px 4px rgba(255, 255, 255, 0.6);
 }
 
 .feels-like {
@@ -398,16 +523,27 @@ body.haze {
 }
 
 .detail-item {
-    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%); /* Pour Safari */
     padding: 1.25rem;
     border-radius: 16px;
     transition: all 0.3s ease;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    /* Effet de buée localisé */
+    background-image: 
+        radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.25) 0%, transparent 60%);
 }
 
 .detail-item:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(30px) saturate(200%);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    box-shadow: 0 12px 28px rgba(31, 38, 135, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-image: 
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.35) 0%, transparent 70%);
 }
 
 .detail-label {
@@ -417,19 +553,21 @@ body.haze {
     margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.5);
 }
 
 .detail-value {
     font-size: 1.75rem;
     font-weight: 700;
     color: var(--text-dark);
+    text-shadow: 0 2px 6px rgba(255, 255, 255, 0.8), 0 3px 10px rgba(255, 255, 255, 0.4);
 }
 
 /* Lever/coucher du soleil */
 .sun-times {
     margin-top: 2rem;
     padding-top: 2rem;
-    border-top: 2px solid #f3f4f6;
+    border-top: 2px solid rgba(255, 255, 255, 0.25);
     display: flex;
     justify-content: space-around;
 }
@@ -445,12 +583,14 @@ body.haze {
     margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.5);
 }
 
 .sun-time-value {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-dark);
+    text-shadow: 0 2px 6px rgba(255, 255, 255, 0.8), 0 3px 10px rgba(255, 255, 255, 0.4);
 }
 
 /* ==========================================

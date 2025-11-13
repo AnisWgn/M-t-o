@@ -102,6 +102,9 @@
             </div>
         </div>
     </div>
+    <footer>
+        <p>Site réalisé grâce à l'API OpenWeatherMap</p>
+    </footer>
     
     <script src="js/weather.js"></script>
 </body>
