@@ -15,6 +15,11 @@ const baseCities = [
     'Rennes, FR', 'Reims, FR', 'Saint-Étienne, FR', 'Toulon, FR', 'Le Havre, FR',
     'Grenoble, FR', 'Dijon, FR', 'Angers, FR', 'Villeurbanne, FR', 'Nîmes, FR',
     'Nancy, FR', 'Clermont-Ferrand, FR', 'Brest, FR', 'Biarritz, FR', 'La Rochelle, FR',
+    'Metz, FR', 'Aix-en-Provence, FR', 'Perpignan, FR', 'Avignon, FR', 'Cannes, FR',
+    // Belgique
+    'Bruxelles, BE', 'Anvers, BE', 'Gand, BE', 'Charleroi, BE', 'Liège, BE',
+    // Suisse
+    'Zurich, CH', 'Genève, CH', 'Bâle, CH', 'Lausanne, CH', 'Berne, CH',
     // Europe
     'London, GB', 'Manchester, GB', 'Edinburgh, GB', 'Dublin, IE',
     'Madrid, ES', 'Barcelona, ES', 'Valencia, ES', 'Lisbon, PT', 'Porto, PT',
@@ -297,6 +302,71 @@ function createLightningFlashes(count = 2) {
 }
 
 // ==========================================
+// FONCTION POUR OBTENIR LE FUSEAU HORAIRE
+// ==========================================
+// Fonction pour obtenir une approximation du fuseau horaire à partir des coordonnées
+function getTimezoneFromCoordinates(lat, lon) {
+    // Calcul approximatif basé sur la longitude (chaque 15° = 1 heure)
+    const offset = Math.round(lon / 15);
+    
+    // Mapper vers les fuseaux horaires IANA les plus courants
+    // Cette fonction retourne un fuseau horaire approximatif
+    // Pour une précision maximale, on utilisera l'API WorldTimeAPI
+    const timezones = {
+        '-12': 'Etc/GMT+12', '-11': 'Pacific/Midway', '-10': 'Pacific/Honolulu',
+        '-9': 'America/Anchorage', '-8': 'America/Los_Angeles', '-7': 'America/Denver',
+        '-6': 'America/Chicago', '-5': 'America/New_York', '-4': 'America/Caracas',
+        '-3': 'America/Sao_Paulo', '-2': 'Atlantic/South_Georgia', '-1': 'Atlantic/Azores',
+        '0': 'Europe/London', '1': 'Europe/Paris', '2': 'Europe/Athens',
+        '3': 'Europe/Moscow', '4': 'Asia/Dubai', '5': 'Asia/Karachi',
+        '6': 'Asia/Dhaka', '7': 'Asia/Bangkok', '8': 'Asia/Shanghai',
+        '9': 'Asia/Tokyo', '10': 'Australia/Sydney', '11': 'Pacific/Auckland',
+        '12': 'Pacific/Fiji'
+    };
+    
+    return timezones[offset.toString()] || 'UTC';
+}
+
+// Fonction améliorée pour obtenir le fuseau horaire via l'API GeoNames (gratuite)
+async function getTimezoneFromGeoNames(lat, lon) {
+    try {
+        // Essayer d'abord avec l'API GeoNames
+        const response = await fetch(
+            `https://secure.geonames.org/timezoneJSON?lat=${lat}&lng=${lon}&username=demo`
+        );
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.timezoneId && !data.status) {
+                return data.timezoneId;
+            }
+        }
+    } catch (error) {
+        console.warn('Erreur GeoNames:', error);
+    }
+    
+    // Essayer avec l'API WorldTimeAPI (nécessite d'abord de trouver le fuseau horaire)
+    try {
+        // Utiliser l'approximation pour obtenir un fuseau horaire proche
+        const approxTimezone = getTimezoneFromCoordinates(lat, lon);
+        
+        // Essayer de récupérer les informations de ce fuseau horaire
+        const response = await fetch(
+            `https://worldtimeapi.org/api/timezone/${approxTimezone}`
+        );
+        
+        if (response.ok) {
+            return approxTimezone;
+        }
+    } catch (error) {
+        console.warn('Erreur WorldTimeAPI:', error);
+    }
+    
+    // Fallback final vers l'approximation
+    return getTimezoneFromCoordinates(lat, lon);
+}
+
+// ==========================================
 // FONCTION POUR RECHERCHER LA MÉTÉO
 // ==========================================
 async function searchWeather(cityName) {
@@ -317,6 +387,11 @@ async function searchWeather(cityName) {
         }
         
         const data = await response.json();
+        
+        // Obtenir le fuseau horaire de la ville
+        const timezone = await getTimezoneFromGeoNames(data.coord.lat, data.coord.lon);
+        data.timezone = timezone;
+        
         displayWeather(data);
         
     } catch (error) {
@@ -364,13 +439,25 @@ function displayWeather(data) {
         `${(data.visibility / 1000).toFixed(1)} km`;
     document.getElementById('clouds').textContent = `${data.clouds.all}%`;
     
-    // Heures du soleil
+    // Heures du soleil - utiliser le fuseau horaire de la ville
     const sunrise = new Date(data.sys.sunrise * 1000);
     const sunset = new Date(data.sys.sunset * 1000);
+    
+    // Utiliser le fuseau horaire de la ville si disponible, sinon utiliser UTC
+    const timezone = data.timezone || 'UTC';
+    
     document.getElementById('sunrise').textContent = 
-        sunrise.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        sunrise.toLocaleTimeString('fr-FR', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            timeZone: timezone
+        });
     document.getElementById('sunset').textContent = 
-        sunset.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        sunset.toLocaleTimeString('fr-FR', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            timeZone: timezone
+        });
     
     elements.weatherDisplay.classList.remove('hidden');
 }
